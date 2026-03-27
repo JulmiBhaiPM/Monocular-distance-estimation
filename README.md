@@ -294,7 +294,7 @@ PRP_Project/
 | Resource | Link |
 |---|---|
 | Mark-1 Google Colab Notebook | [Open in Colab](https://colab.research.google.com/drive/1xxHA_BfoeySaeE0QvT2qg8hQhJb-wrrF?usp=sharing) |
-| Mark-2 Notebook | PRP Mark 2 .ipynb (included in repo) |
+| Mark-2 Notebook | [Open in Colab] (https://colab.research.google.com/drive/1w0B0_JVOhXmFtKVtpuMTwVruRaklA6Bq?usp=sharing) |
 | CSV Dataset (metadata + annotations) | [Google Drive](https://drive.google.com/drive/folders/13HF8wDYDyIoTmhDnNi34fqQd8h1Ln0Os?usp=sharing) |
 | Image Dataset | [Google Drive](https://drive.google.com/drive/folders/1CR6XhUEtnG5ELlUSVwxsblewI0mAybuf?usp=sharing) |
 
