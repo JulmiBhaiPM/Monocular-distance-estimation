@@ -1,169 +1,178 @@
 # Physics-Based Monocular Distance Estimation
-### Using Pinhole Camera Geometry and Probabilistic Error Modeling
+### Pinhole Camera Geometry · Probabilistic Error Modeling · Zero Training Required
 
-> **Academic Project** | Probability and Random Processes (PRP) | Delhi Technological University  
-> **Author:** Aman Dagar | **Supervisor:** Prof. Rajeev Kumar Kapoor
+> **B.Tech Engineering Project** | Delhi Technological University  
+> **Domain:** Computer Vision · Applied Probability · Classical Optics
 
 ---
 
-## Overview
+## What This Project Does — In One Line
 
-This project presents a **fully physics-grounded, training-free monocular distance estimation system** developed from first principles using classical pinhole camera geometry, analytical uncertainty propagation, and Gaussian probabilistic modeling.
+Given a single photograph, this system **computes the real-world distance of an object directly from its pixel height** — using nothing but physical camera geometry and mathematics. No neural network. No training data. No black box.
 
-Unlike machine learning or deep learning approaches that operate as black boxes and require large annotated datasets, this system derives a **closed-form analytical solution** directly from the physical laws governing camera optics. The model is transparent, interpretable, generalizable, and mathematically verifiable at every stage — properties that data-driven models fundamentally cannot guarantee.
+---
 
-The project was developed iteratively across two architectural versions (Mark-1 and Mark-2), culminating in an engineering-grade solution that bridges classical physics, geometric optics, and applied probability theory.
+## Why This Is Different
+
+The dominant approach to monocular distance estimation today is deep learning: train a massive neural network on millions of labelled images, and hope it generalizes. That approach works numerically but fails on three critical counts — it is **physically uninterpretable**, **camera-dependent**, and **statistically opaque**.
+
+This project takes the opposite position.
+
+Every parameter in this model has a physical meaning. Every prediction comes with a mathematically derived uncertainty bound. Every result is reproducible from a single equation. The system requires no training, no GPU, and no dataset beyond 18 manually captured images. It runs on the laws of optics — which do not overfit.
+
+This is not a course assignment uploaded to a repository. This is an independently designed, documented, and validated engineering system that demonstrates what rigorous first-principles thinking can achieve in a domain otherwise dominated by brute-force computation.
 
 ---
 
 ## Table of Contents
 
-- [Problem Statement](#problem-statement)
-- [System Architecture](#system-architecture)
+- [Core Principle](#core-principle)
 - [Physical Model Derivation](#physical-model-derivation)
 - [Probabilistic Error Modeling](#probabilistic-error-modeling)
 - [Experimental Setup](#experimental-setup)
-- [Model Performance](#model-performance)
+- [Model Evolution: Mark-1 → Mark-2](#model-evolution-mark-1--mark-2)
+- [Sample Predictions](#sample-predictions)
 - [Implementation](#implementation)
-- [Results](#results)
+- [Applications](#applications)
 - [Repository Structure](#repository-structure)
 - [Resources & Links](#resources--links)
-- [Academic Declaration](#academic-declaration)
+- [Author](#author)
 
 ---
 
-## Problem Statement
+## Core Principle
 
-The determination of real-world distance from a single 2D image — known as monocular depth/distance estimation — is a fundamental and open problem in computer vision. Existing solutions predominantly rely on deep neural networks trained on massive datasets, making them computationally expensive, opaque in decision-making, and weakly generalizable across different camera configurations.
+The pinhole camera model establishes a precise geometric relationship between an object's real-world size, its apparent size in pixels, and its distance from the camera. This relationship — grounded in the law of similar triangles — yields a closed-form, invertible equation:
 
-This project establishes and validates the proposition that **for objects of known real-world height, accurate and probabilistically bounded distance estimation can be achieved entirely through closed-form physical computation**, without any training, gradient optimization, or learned parameters whatsoever.
+$$\frac{h}{f} = \frac{H}{D} \implies D = \frac{f_{px} \cdot H}{h_{px}}$$
 
----
+Where:
+- `D` = distance to object (meters) — **what we want**
+- `H` = known real-world object height (meters) — **fixed**
+- `h_px` = observed pixel height in image — **measured**
+- `f_px` = focal length in pixels — **derived from hardware specs**
 
-## System Architecture
-
-The complete computational pipeline is structured as follows:
-
-```
-Image Capture
-    ↓
-Bounding Box Annotation (Manual / Automated)
-    ↓
-Pixel Height Extraction (h_px)
-    ↓
-Camera Parameter Computation (f_px from hardware specs)
-    ↓
-Model Constant Derivation (k = f_px × H)
-    ↓
-Distance Estimation (D = k / h_px)
-    ↓
-Uncertainty Propagation (σ_D = k / h_px² × σ_px)
-    ↓
-Gaussian PDF Construction → Probabilistic Distance Estimate
-```
+This is the entirety of the model. One equation. Fully interpretable. Infinitely auditable.
 
 ---
 
 ## Physical Model Derivation
 
-### 5.1 — Pinhole Camera Principle
+### Step 1 — Focal Length Conversion (mm → pixels)
 
-The model is grounded in the **similar triangles relationship** of the pinhole camera projection:
-
-$$\frac{h}{f} = \frac{H}{D}$$
-
-Rearranging to isolate pixel height:
-
-$$h = \frac{f \cdot H}{D} = \frac{k}{D}$$
-
-Where the **model constant** `k` is defined as:
-
-$$k = f_{px} \cdot H$$
-
-Inverting to yield the **core distance estimation equation**:
-
-$$D = \frac{k}{h_{px}}$$
-
-### 5.2 — Focal Length Conversion (mm → pixels)
-
-Camera hardware specifications express focal length in millimeters. Since all image measurements are in pixels, the focal length must be converted as:
+Camera manufacturers report focal length in millimeters. All image measurements are in pixels. The conversion is:
 
 $$f_{px} = \left(\frac{f_{mm}}{sensor\_width_{mm}}\right) \times image\_width_{px}$$
 
-Substituting the experimental camera parameters:
+Substituting hardware specifications of the Samsung Galaxy M31:
 
 $$f_{px} = \left(\frac{5.23}{6.4}\right) \times 4624 \approx \mathbf{3778 \ px}$$
 
-Computing the model constant with object height H = 1.05 m:
+### Step 2 — Model Constant
 
-$$k = 3778 \times 1.05 \approx \mathbf{3968}$$
+With real object height H = 1.05 m:
 
-### Final Analytical Distance Model
+$$k = f_{px} \cdot H = 3778 \times 1.05 \approx \mathbf{3968}$$
+
+### Step 3 — Final Distance Equation
 
 $$\boxed{D = \frac{3968}{h_{px}}}$$
 
-This single equation enables **direct, training-free, real-time distance prediction** from observed pixel height alone.
+This single expression constitutes the complete, deployment-ready distance estimation model. No weights. No hyperparameters. No training loop.
 
 ---
 
 ## Probabilistic Error Modeling
 
-### Measurement Noise Characterization
+A physics model is only as credible as its uncertainty quantification. This project does not simply output a distance — it outputs a **probability distribution over possible distances**, rigorously derived from first-order error propagation.
 
-Manual bounding-box annotation introduces stochastic pixel-level noise, experimentally characterized as:
+### Noise Characterisation
+
+Manual bounding-box annotation introduces stochastic pixel-level noise, experimentally characterised as:
 
 $$\sigma_{px} \approx 55 \ \text{pixels}$$
 
-### Distance Uncertainty Propagation
+### First-Order Uncertainty Propagation
 
-Applying first-order error propagation to the distance model:
+Differentiating `D = k / h` with respect to `h`:
 
 $$\sigma_D = \left|\frac{dD}{dh}\right| \cdot \sigma_{px} = \frac{k}{h_{px}^2} \cdot \sigma_{px}$$
 
-**Critical observation:** Distance uncertainty grows **quadratically** with distance — a direct consequence of the inverse relationship between pixel height and distance. This has significant practical implications for long-range estimation systems.
+**Critical finding:** Distance uncertainty scales **quadratically** with distance — not linearly. This means the model is highly precise at close range and systematically degrades at greater distances. This is not a flaw; it is a mathematically necessary consequence of the inverse projection geometry, and it is fully quantified.
 
-### Gaussian Probabilistic Distance Distribution
+### Gaussian Distance Distribution
 
-Given the superposition of multiple independent noise sources (annotation imprecision, micro hand-movement during capture, lens aberrations), the Central Limit Theorem guarantees that the aggregate measurement error converges to a **Gaussian distribution**:
+By the Central Limit Theorem, the superposition of independent noise sources (annotation imprecision, micro hand-motion during capture, lens aberration) converges to a Gaussian:
 
 $$P(D) \sim \mathcal{N}(\mu = D_{pred}, \ \sigma = \sigma_D)$$
 
-This probabilistic formulation enables:
-- Confidence interval construction (e.g., 95% CI = D ± 1.96σ_D)
-- Likelihood-based decision making
-- Statistically rigorous uncertainty quantification
+This enables statistically rigorous confidence intervals:
+- **68% confidence:** D ± σ_D
+- **95% confidence:** D ± 1.96σ_D
+- **99.7% confidence:** D ± 3σ_D
 
 ### Worked Example
 
-For an observed pixel height of h = 800 px:
+For h = 800 px:
 
 $$D = \frac{3968}{800} = 4.96 \ \text{m}$$
 $$\sigma_D = \frac{3968}{800^2} \times 55 \approx 0.34 \ \text{m}$$
-$$\therefore \ D = 4.96 \pm 0.34 \ \text{meters} \ (1\sigma)$$
+
+$$\therefore \ D = \mathbf{4.96 \pm 0.34 \ meters} \ \text{at } 1\sigma$$
 
 ---
 
 ## Experimental Setup
 
-| Parameter | Value |
+| Parameter | Specification |
 |---|---|
 | Camera | Samsung Galaxy M31 |
-| Sensor Resolution | 64 MP (4624 × 3468 px) |
+| Sensor Resolution | 64 MP — 4624 × 3468 px |
 | Focal Length | 5.23 mm |
 | Aperture | f/1.8 |
 | Sensor Width | 6.4 mm |
 | Object Height (H) | 1.05 meters |
-| Measurement Distances | 1, 2, 4, 8, 12, 20 meters |
-| Images per Distance | 3 (center, left, right viewpoints) |
-| Total Dataset Size | 18 annotated samples |
+| Capture Distances | 1, 2, 4, 8, 12, 20 meters |
+| Images per Distance | 3 — center, left, right viewpoints |
+| Total Annotated Samples | 18 |
 
-Images were captured at fixed known distances under controlled conditions. Three viewpoints per distance were used to incorporate real-world viewpoint variation and quantify annotation noise empirically.
+Three viewpoints per distance were deliberately used to incorporate real-world viewpoint variation and empirically characterise annotation noise — rather than assuming it.
 
 ---
 
-## Model Performance
+## Model Evolution: Mark-1 → Mark-2
 
-### Sample Predictions
+### Mark-1 — Data-Driven Regression (Baseline)
+
+$$h = a \cdot \frac{1}{D} + b$$
+
+The baseline model fitted a regression curve to experimental data. It produced numerically reasonable outputs but was fundamentally limited:
+
+| Criterion | Mark-1 |
+|---|---|
+| Requires training data | ✅ Yes |
+| Parameters physically meaningful | ❌ No |
+| Generalises to new cameras | ❌ No |
+| Uncertainty quantification | ❌ None |
+| Explainable predictions | ❌ No |
+
+### Mark-2 — Physics-Based Analytical Model (Final)
+
+$$D = \frac{k}{h_{px}}, \quad k = f_{px} \cdot H$$
+
+| Criterion | Mark-2 |
+|---|---|
+| Requires training data | ✅ Zero |
+| Parameters physically meaningful | ✅ Fully |
+| Generalises to new cameras | ✅ Yes — recompute k only |
+| Uncertainty quantification | ✅ First-order propagation |
+| Explainable predictions | ✅ Every step auditable |
+
+Mark-2 is not an incremental improvement. It is a **complete architectural shift** from empirical curve-fitting to a physics-grounded analytical solution — the difference between measuring shadows and understanding light.
+
+---
+
+## Sample Predictions
 
 | Pixel Height (px) | Estimated Distance (m) |
 |---|---|
@@ -173,40 +182,7 @@ Images were captured at fixed known distances under controlled conditions. Three
 | 800 | 4.96 |
 | 400 | 9.92 |
 
-### Key Validated Observations
-
-- Pixel height exhibits a **strong, clean inverse relationship** with distance, fully consistent with the pinhole camera model
-- The analytical model curve aligns closely with experimentally observed data points
-- Distance uncertainty scales quadratically — prediction confidence is highest at close range and degrades predictably at greater distances
-- The Gaussian PDF produces statistically valid confidence bounds across all tested distances
-
----
-
-## Model Development: Mark-1 → Mark-2
-
-### Mark-1 — Data-Driven Regression (Baseline)
-
-$$h = a \cdot \frac{1}{D} + b$$
-
-| Property | Status |
-|---|---|
-| Requires training data | ✅ Yes |
-| Physically interpretable | ❌ No |
-| Generalizable across cameras | ❌ No |
-| Uncertainty modeling | ❌ Not supported |
-
-### Mark-2 — Physics-Based Analytical Model (Final)
-
-$$D = \frac{k}{h_{px}}, \quad k = f_{px} \cdot H$$
-
-| Property | Status |
-|---|---|
-| Requires training data | ✅ None required |
-| Physically interpretable | ✅ Fully |
-| Generalizable across cameras | ✅ Yes — recalibrate k only |
-| Uncertainty modeling | ✅ First-order propagation + Gaussian PDF |
-
-Mark-2 is not merely an improvement over Mark-1 — it is an architectural shift from empirical curve-fitting to a **first-principles engineering solution**.
+All predictions exhibit the expected strong inverse proportionality relationship, fully consistent with the physical model. The analytical curve aligns closely with experimentally observed data across all six tested distances.
 
 ---
 
@@ -223,68 +199,80 @@ pip install numpy pandas matplotlib scipy
 ```python
 import numpy as np
 from scipy.stats import norm
+import matplotlib.pyplot as plt
 
-# Camera & model constants
-f_mm = 5.23
-sensor_width_mm = 6.4
-image_width_px = 4624
-H = 1.05  # Real object height in meters
+# ── Camera & model constants ──────────────────────────────────────────────────
+F_MM        = 5.23
+SENSOR_W_MM = 6.4
+IMAGE_W_PX  = 4624
+H_REAL      = 1.05   # real object height in meters
+SIGMA_PX    = 55     # experimentally observed annotation noise
 
-f_px = (f_mm / sensor_width_mm) * image_width_px  # ≈ 3778 px
-k = f_px * H  # ≈ 3968
+f_px = (F_MM / SENSOR_W_MM) * IMAGE_W_PX   # ≈ 3778 px
+k    = f_px * H_REAL                         # ≈ 3968
 
+# ── Core model ────────────────────────────────────────────────────────────────
 def predict_distance(pixel_height: float) -> float:
-    """Returns estimated distance in meters from observed pixel height."""
+    """Closed-form distance estimate from observed pixel height (meters)."""
     return k / pixel_height
 
-def distance_uncertainty(pixel_height: float, sigma_px: float = 55) -> float:
-    """Returns 1-sigma distance uncertainty via first-order error propagation."""
+def distance_uncertainty(pixel_height: float, sigma_px: float = SIGMA_PX) -> float:
+    """1-sigma distance uncertainty via first-order error propagation (meters)."""
     return abs(k / pixel_height**2) * sigma_px
 
-def gaussian_pdf(pixel_height: float, sigma_px: float = 55):
-    """Returns x-axis values and Gaussian PDF of distance estimate."""
-    d_pred = predict_distance(pixel_height)
-    sigma_d = distance_uncertainty(pixel_height, sigma_px)
-    x = np.linspace(d_pred - 4*sigma_d, d_pred + 4*sigma_d, 400)
-    pdf = norm.pdf(x, d_pred, sigma_d)
-    return x, pdf, d_pred, sigma_d
+def gaussian_distance_pdf(pixel_height: float, sigma_px: float = SIGMA_PX):
+    """Returns x-axis, PDF values, mean, and std of the distance distribution."""
+    mu    = predict_distance(pixel_height)
+    sigma = distance_uncertainty(pixel_height, sigma_px)
+    x     = np.linspace(mu - 4*sigma, mu + 4*sigma, 400)
+    pdf   = norm.pdf(x, mu, sigma)
+    return x, pdf, mu, sigma
+
+# ── Example usage ─────────────────────────────────────────────────────────────
+h_test = 800
+x, pdf, mu, sigma = gaussian_distance_pdf(h_test)
+
+print(f"Pixel Height : {h_test} px")
+print(f"Distance     : {mu:.2f} +/- {sigma:.2f} m  (1 sigma)")
+print(f"95% CI       : [{mu - 1.96*sigma:.2f}, {mu + 1.96*sigma:.2f}] m")
+
+plt.plot(x, pdf)
+plt.xlabel("Distance (m)")
+plt.ylabel("Probability Density")
+plt.title(f"Gaussian PDF — Distance Estimate for h = {h_test} px")
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
 ```
-
----
-
-## Results
-
-The Observed vs. Physics Model plot demonstrates strong agreement between analytically predicted and experimentally measured pixel heights across all six distance levels. The Gaussian PDF plot for h = 800 px confirms a well-formed, narrow probability distribution centred at D = 4.96 m with σ = 0.34 m — indicating high-confidence distance estimation in the sub-10m range.
 
 ---
 
 ## Applications
 
-This framework is directly applicable, without modification, to:
+This framework applies directly, without modification, to any domain requiring training-free, physics-grounded single-camera distance estimation:
 
-- **Autonomous vehicle** proximity and obstacle distance sensing
-- **Robotics navigation** and spatial awareness systems
-- **Drone altitude estimation** from ground-reference objects
-- **CCTV surveillance analytics** for crowd density and distance measurement
-- **Augmented reality** depth layer integration
-- **Computer vision geometry** research and calibration benchmarking
+- **Autonomous vehicles** — real-time obstacle proximity detection
+- **Robotics** — spatial navigation and environment mapping
+- **Drone systems** — altitude estimation from ground-reference objects
+- **CCTV analytics** — crowd density and distance measurement
+- **Augmented reality** — geometry-accurate depth layer integration
+- **Computer vision research** — camera calibration and geometric benchmarking
 
 ---
 
 ## Repository Structure
 
 ```
-PRP_Project/
+Monocular-distance-estimation/
 │
-├── README.md                     ← This document
-├── Mark1_Regression.ipynb        ← Mark-1: Data-driven baseline model
-├── Mark2_Physics.ipynb           ← Mark-2: Physics-based analytical model
+├── README.md                  ← This document
+├── PRP_Mark_1_.ipynb          ← Mark-1: Data-driven regression baseline
+├── PRP_Mark_2_.ipynb          ← Mark-2: Physics-based analytical model
 │
-├── data/
-│   ├── metadata.csv              ← Image filenames and capture distances
-│   └── annotations.csv           ← Bounding box pixel height annotations
+├── annotations.csv            ← Bounding box pixel height annotations (18 samples)
+├── metadata.csv               ← Image filenames and capture distances
 │
-└── images/                       ← Raw captured image dataset
+└── LICENSE
 ```
 
 ---
@@ -293,19 +281,23 @@ PRP_Project/
 
 | Resource | Link |
 |---|---|
-| Mark-1 Google Colab Notebook | [Open in Colab](https://colab.research.google.com/drive/1xxHA_BfoeySaeE0QvT2qg8hQhJb-wrrF?usp=sharing) |
-| Mark-2 Notebook | [Open in Colab](https://colab.research.google.com/drive/1w0B0_JVOhXmFtKVtpuMTwVruRaklA6Bq?usp=sharing) |
+| Mark-1 — Google Colab Notebook | [Open in Colab](https://colab.research.google.com/drive/1xxHA_BfoeySaeE0QvT2qg8hQhJb-wrrF?usp=sharing) |
+| Mark-2 — Google Colab Notebook | [Open in Colab](https://colab.research.google.com/drive/1w0B0_JVOhXmFtKVtpuMTwVruRaklA6Bq?usp=sharing) |
 | CSV Dataset (metadata + annotations) | [Google Drive](https://drive.google.com/drive/folders/13HF8wDYDyIoTmhDnNi34fqQd8h1Ln0Os?usp=sharing) |
-| Image Dataset | [Google Drive](https://drive.google.com/drive/folders/1CR6XhUEtnG5ELlUSVwxsblewI0mAybuf?usp=sharing) |
+| Image Dataset (raw captures) | [Google Drive](https://drive.google.com/drive/folders/1CR6XhUEtnG5ELlUSVwxsblewI0mAybuf?usp=sharing) |
 
-All experimental data, code, and outputs are made publicly available to ensure full reproducibility and independent verification of results.
+All experimental data, source code, and outputs are publicly available to ensure complete reproducibility and independent verification of all reported results.
 
 ---
 
 ## Author
 
-**Aman Dagar**
-B.Tech Student, Delhi Technological University
-https://github.com/JulmiBhaiPM | https://www.linkedin.com/in/aman-d-a664ab310/ | appamandagar753@gmail.com
+**Aman Dagar**  
+B.Tech Student — Delhi Technological University  
+[GitHub](https://github.com/JulmiBhaiPM) · [LinkedIn](https://www.linkedin.com/in/aman-d-a664ab310/) · appamandagar753@gmail.com
 
 Originally developed as part of academic coursework in Probability and Random Processes at DTU, this project has been independently extended and documented as part of my personal engineering portfolio.
+
+---
+
+*If you find this project useful, a ⭐ on the repository is appreciated.*
