@@ -302,12 +302,10 @@ All experimental data, code, and outputs are made publicly available to ensure f
 
 ---
 
-## Academic Declaration
+## Author
 
-This project was conceived, designed, and executed in its entirety by **Aman Dagar** as an original academic submission for the course **Probability and Random Processes (PRP)** at **Delhi Technological University (DTU)**, under the guidance of **Prof. Rajeev Kumar Kapoor**.
+**Aman Dagar**
+B.Tech Student, Delhi Technological University
+https://github.com/JulmiBhaiPM | https://www.linkedin.com/in/aman-d-a664ab310/ | appamandagar753@gmail.com
 
-All referenced methodologies, external frameworks, and experimental observations have been duly acknowledged. No portion of this work has been submitted elsewhere for academic credit.
-
----
-
-*Delhi Technological University | Shahbad Daulatpur, Main Bawana Road, Delhi – 110042*
+Originally developed as part of academic coursework in Probability and Random Processes at DTU, this project has been independently extended and documented as part of my personal engineering portfolio.
