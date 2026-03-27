@@ -1,4 +1,3 @@
-# Monocular-distance-estimation
 # Physics-Based Monocular Distance Estimation
 ### Using Pinhole Camera Geometry and Probabilistic Error Modeling
 
